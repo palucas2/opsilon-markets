@@ -170,6 +170,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
 .tbl th:last-child,.tbl td:last-child{padding-right:0}
 .tbl th.l,.tbl td.l{text-align:left}
 .tbl td{padding:11px 8px;border-bottom:1px solid var(--rule);text-align:right;font-variant-numeric:tabular-nums;vertical-align:top}
+.tbl td.l,.tbl td:first-child{font-variant-numeric:normal}
 .tbl tr.grp td{font-weight:600;padding-top:22px;border-bottom:1px solid var(--rule-strong)}
 .tbl a:hover{text-decoration:underline;text-underline-offset:3px}
 .tbl th.sortable{cursor:pointer}
