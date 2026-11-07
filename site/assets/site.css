@@ -227,6 +227,20 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
 .disclaimer{font-size:13px;color:var(--ink-3);margin-top:40px}
 .badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;font-size:12px;border:1px solid var(--rule-strong)}
 
+/* ---------- commodities ---------- */
+.subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:-20px}
+.subnav .chip{height:34px}
+.pbar{display:inline-block;width:64px;height:6px;background:var(--band);position:relative;vertical-align:middle;margin-right:8px}
+.pbar::before,.pbar::after{content:"";position:absolute;top:0;bottom:0;width:10%;background:var(--band)}
+.pbar::before{left:0}.pbar::after{right:0}
+.pbar i{position:absolute;top:-4px;bottom:-4px;width:2px}
+.spk{display:block}
+.badge.st-up{border-color:var(--up);color:var(--up-text)}
+.badge.st-down{border-color:var(--down);color:var(--down-text)}
+.badge.st-warn{border-color:#d29b2a;color:#d29b2a}
+.heat a{display:block;transition:opacity .15s}.heat a:hover{opacity:.85}
+.heat a b{display:block;font-weight:500;font-variant-numeric:tabular-nums}
+
 /* ---------- footer ---------- */
 .site-footer{border-top:1px solid var(--rule);padding:48px 0 40px;position:relative;z-index:1}
 .site-footer__grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:20px}

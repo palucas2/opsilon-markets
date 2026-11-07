@@ -42,14 +42,14 @@ LAYOUT = """<!DOCTYPE html>
 SECTION_BUNDLE = {"markets": "markets", "tools": "tools", "research": "research", "home": "markets", "info": "research"}
 
 
-def page(path: str, title: str, page_key: str, section: str, desc: str = "", param: str = "", main_cls: str = "wrap grid12"):
+def page(path: str, title: str, page_key: str, section: str, desc: str = "", param: str = "", main_cls: str = "wrap grid12", bundle: str = ""):
     depth = len([p for p in path.strip("/").split("/") if p])
     root = "../" * depth if depth else "./"
     out = DIST / path / "index.html"
     out.parent.mkdir(parents=True, exist_ok=True)
     full = f"{title}: Opsilon Markets" if page_key != "home" else "Opsilon Markets: markets research platform"
     out.write_text(LAYOUT.format(root=root, title=html.escape(full), desc=html.escape(desc or title), page=page_key, section=section,
-                                 param=html.escape(param), bundle=SECTION_BUNDLE[section], v=ASSET_V, main_cls=main_cls))
+                                 param=html.escape(param), bundle=bundle or SECTION_BUNDLE[section], v=ASSET_V, main_cls=main_cls))
 
 
 def load(rel, default=None):
@@ -85,6 +85,12 @@ def main():
     page("fx", "FX", "fx", "markets", "The dollar, the G10 majors and the main emerging-market currencies.")
     for n in load("fxnotes/index.json", []) or []:
         page(f"fx/{n['date']}", n["title"], "fxnote", "markets", param=n["date"])
+    page("commodities", "Commodities", "commodities", "markets", "Futures curves, spreads, inventories, positioning, shipping, weather and seasonality.", bundle="commodities")
+    for sid, t in [("term-structure", "Term structure"), ("spreads", "Spreads"), ("fundamentals", "Supply & demand"), ("logistics", "Logistics"),
+                   ("positioning", "Positioning"), ("macro", "Dollar, China & news"), ("weather", "Weather"), ("seasonality", "Seasonality")]:
+        page(f"commodities/{sid}", f"Commodities: {t}", "commsec", "markets", param=sid, bundle="commodities")
+    for row in (load("commodities/index.json", {}) or {}).get("rows", []):
+        page(f"commodities/{row['key']}", row["name"], "commodity", "markets", f"{row['name']} futures: price, curve, positioning and seasonality.", param=row["key"], bundle="commodities")
     page("companies", "Companies", "companies", "markets", "The 600 largest companies in the US, Europe and Asia.")
     for row in (load("companies/index.json", {}) or {}).get("rows", []):
         page(f"companies/{row['slug']}", f"{row['n']} ({row['t']})", "company", "markets", param=row["slug"])

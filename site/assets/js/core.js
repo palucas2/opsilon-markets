@@ -45,6 +45,7 @@ const NAV = [
     ['calendar/', 'Calendar', 'Results, central banks and releases, five weeks ahead'],
     ['world/', 'World', 'Twenty-five markets on eight measures'],
     ['fx/', 'FX', 'The dollar, majors and emerging markets'],
+    ['commodities/', 'Commodities', 'Curves, positioning, inventories, shipping and weather'],
     ['companies/', 'Companies', 'The 600 largest in the US, Europe and Asia']] },
   { k: 'tools', label: 'Tools', desc: 'Calculators and simulators that run in your browser', items: [
     ['lab/options/', 'Options', 'Payoff diagrams and Black-Scholes'],

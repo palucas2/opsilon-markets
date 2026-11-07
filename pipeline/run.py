@@ -17,7 +17,7 @@ from common import OUT, ensure_dirs, now_et_label, write_json
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("opsilon")
 
-import build_companies, build_dashboards, build_history, build_markets, build_notes  # noqa: E402
+import build_commodities, build_companies, build_dashboards, build_history, build_markets, build_notes  # noqa: E402
 
 STEPS = [
     ("dashboards", build_dashboards.build),
@@ -25,6 +25,7 @@ STEPS = [
     ("world", build_markets.build_world),
     ("central-banks", build_markets.build_central_banks),
     ("recession", build_markets.build_recession),
+    ("commodities", build_commodities.build),
     ("companies", build_companies.build),     # also writes calendar.json
     ("history", build_history.build),
     ("notes", build_notes.build),             # needs fx.json and calendar.json
@@ -41,6 +42,9 @@ def probe():
                       ("FRED csv", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10&cosd=2026-01-01"),
                       ("FRED api", "https://api.stlouisfed.org/fred/series?series_id=DGS10"),
                       ("BLS", "https://api.bls.gov/publicAPI/v1/timeseries/data/LNS14000000"),
+                      ("CFTC", "https://publicreporting.cftc.gov/resource/72hh-3qpy.json?$limit=1"),
+                      ("EIA", "https://ir.eia.gov/ngs/wngsr.json"),
+                      ("Open-Meteo", "https://api.open-meteo.com/v1/forecast?latitude=40&longitude=-74&daily=temperature_2m_mean&forecast_days=1"),
                       ("World Bank", "https://api.worldbank.org/v2/country/US/indicator/NY.GDP.MKTP.KD.ZG?format=json&mrnev=1")]:
         t0 = time.time()
         try:
