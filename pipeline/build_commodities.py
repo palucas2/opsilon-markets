@@ -6,7 +6,7 @@ Sources (toutes gratuites, sans clé) :
   - CFTC Public Reporting (Socrata) : Commitments of Traders, désagrégé, futures seuls
   - EIA : Weekly Petroleum Status Report (tables 1 et 9) et stockage de gaz (wngsr.json)
   - IMF PortWatch (ArcGIS) : transits quotidiens par détroit et canal
-  - Open-Meteo : prévisions 16 jours, ensemble ECMWF 35 jours, archive 10 ans (normales)
+  - Open-Meteo : prévisions 16 jours, ensemble GEFS (NOAA) jusqu'à 35 jours, archive ERA5 10 ans (normales)
   - FRED : commerce extérieur chinois
 
 Chaque bloc est isolé : si une source tombe, le reste est écrit, et le fichier
@@ -166,6 +166,11 @@ def ytd(s):
         return None
     prior = s[s.index < pd.Timestamp(f"{s.index[-1].year}-01-01")]
     return r((s.iloc[-1] / prior.iloc[-1] - 1) * 100, 2) if len(prior) else None
+
+
+def ordinal(n):
+    n = int(round(n))
+    return f"{n}{'th' if 11 <= n % 100 <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
 
 
 def pctile(s, v):
@@ -580,7 +585,7 @@ def weather():
     fc = _om("https://api.open-meteo.com/v1/forecast", {"latitude": lat, "longitude": lon, "daily": "temperature_2m_mean,precipitation_sum",
                                                          "forecast_days": 16, "timezone": "UTC"})
     ens = _om("https://ensemble-api.open-meteo.com/v1/ensemble", {"latitude": lat, "longitude": lon, "daily": "temperature_2m_mean,precipitation_sum",
-                                                                  "models": "ecmwf_ifs025", "forecast_days": 35, "timezone": "UTC"})
+                                                                  "models": "gfs05", "forecast_days": 35, "timezone": "UTC"})
     normals = _normals(locs)
     ok = lambda x: isinstance(x, dict) and isinstance(x.get("daily"), dict)
     fc = fc if isinstance(fc, list) else [fc]
@@ -736,7 +741,9 @@ def news():
             seen.add(title)
             url = (c.get("canonicalUrl") or {}).get("url") or (c.get("clickThroughUrl") or {}).get("url") or c.get("link")
             low = (title + " " + (c.get("summary") or "")).lower()
-            tags = [tg for tg, words in C.NEWS_TAGS if any(w in low for w in words)]
+            if not C.NEWS_RELEVANT.search(title.lower()):
+                continue
+            tags = [tg for tg, words in C.NEWS_TAGS if any(re.search(r"\b" + re.escape(w) + r"\b", low) for w in words)]
             items.append({"t": title, "u": url, "p": (c.get("provider") or {}).get("displayName") or c.get("publisher") or "Yahoo Finance",
                           "d": c.get("pubDate") or c.get("displayTime"), "tags": tags, "m": [t]})
         time.sleep(.5)
@@ -1003,7 +1010,7 @@ def build():
     for x in rows:
         d = details[x["key"]]
         if x["cot_flag"]:
-            signals.append((3, {"key": x["key"], "name": x["name"], "kind": "Positioning", "text": f"{x['cot_flag']}: managed money net at the {int(x['cot_pctile'])}th percentile of three years."}))
+            signals.append((3, {"key": x["key"], "name": x["name"], "kind": "Positioning", "text": f"{x['cot_flag']}: managed money net at the {ordinal(x['cot_pctile'])} percentile of three years."}))
         if x["z"] is not None and abs(x["z"]) >= 2.5:
             signals.append((4, {"key": x["key"], "name": x["name"], "kind": "Move", "text": f"Day's move of {x['d1']:+.2f}% is {abs(x['z']):.1f} standard deviations from the year's norm."}))
         se = d.get("season")

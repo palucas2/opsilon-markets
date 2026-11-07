@@ -87,6 +87,15 @@ NEWS_TAGS = [
     ("Geopolitics", ["iran", "russia", "ukraine", "israel", "venezuela", "war", "attack", "missile", "ceasefire"]),
 ]
 
+import re as _re
+
+# A headline is kept only if its title names a commodity market or a physical-supply theme
+NEWS_RELEVANT = _re.compile(r"\b(oil|crude|brent|wti|opec\+?|gasoline|diesel|fuel|refin\w*|lng|natural gas|gas prices?|gas futures|"
+                            r"gold|silver|copper|platinum|palladium|alumin\w*|iron ore|nickel|zinc|lithium|metals?|mining|miners?|mines?|"
+                            r"wheat|corn|soy\w*|grains?|crops?|harvest|wasde|usda|coffee|cocoa|sugar|cotton|cattle|hogs?|livestock|fertili\w*|"
+                            r"commodit\w*|futures|tanker|shipping|freight|hormuz|red sea|suez|panama canal|black sea|pipeline|sanction\w*|embargo|"
+                            r"energy|barrels?|bullion|precious metals?)\b")
+
 # Weather: (key, name, lat, lon, role, markets)
 WEATHER = [
     ("nyc", "New York", 40.71, -74.01, "gas", "US natural gas, power"),

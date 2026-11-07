@@ -13,6 +13,7 @@ function subnav(active) {
   return `<nav class="subnav col-full rv" aria-label="Commodities">${SUB.map(([u, t]) => `<a class="chip${u === active ? ' on' : ''}" href="${o.link(u)}">${t}</a>`).join('')}</nav>`;
 }
 const px = (v, dec) => O().num(v, dec ?? 2);
+const ord = n => { n = Math.round(n); const t = n % 100; return n + (t >= 11 && t <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th')); };
 const doyLabel = d => { const dt = new Date(2025, 0, d); return `${dt.getDate()} ${MON[dt.getMonth()]}`; };
 function sparkSvg(v, w = 92, h = 26) {
   const o = O(); const a = v.filter(o.isNum); if (a.length < 2) return '';
@@ -24,7 +25,7 @@ function sparkSvg(v, w = 92, h = 26) {
 function pbar(p, flag) {
   const o = O(); if (!o.isNum(p)) return '–';
   const c = p >= 90 ? 'var(--up)' : p <= 10 ? 'var(--down)' : 'var(--ink)';
-  return `<span class="pbar" title="${Math.round(p)}th percentile"><i style="left:calc(${p}% - 1px);background:${c}"></i></span><span class="tnum">${Math.round(p)}</span>`;
+  return `<span class="pbar" title="${ord(p)} percentile"><i style="left:calc(${p}% - 1px);background:${c}"></i></span><span class="tnum">${Math.round(p)}</span>`;
 }
 function shapeTag(s) { if (!s) return '–'; const c = s === 'Backwardation' ? 'st-up' : s === 'Contango' ? 'st-down' : ''; return `<span class="badge ${c}">${s}</span>`; }
 function statusTag(s) { const c = /Severe/.test(s) ? 'st-down' : /Disrupt/.test(s) ? 'st-warn' : /Above/.test(s) ? 'st-up' : ''; return `<span class="badge ${c}">${s}</span>`; }
@@ -78,7 +79,7 @@ async function commodities() {
   drawHeat();
   const drawBars = () => {
     o.hbars(o.$('#carry'), rows.filter(r => o.isNum(r.roll)).sort((a, b) => b.roll - a.roll).map(r => [r.name, r.roll]), { labelW: 150, fmt: v => o.sgn(v, 1) + '%' });
-    o.hbars(o.$('#crowd'), rows.filter(r => o.isNum(r.cot_pctile)).sort((a, b) => b.cot_pctile - a.cot_pctile).map(r => [r.name, r.cot_pctile - 50]), { labelW: 150, fmt: v => Math.round(v + 50) + 'th' });
+    o.hbars(o.$('#crowd'), rows.filter(r => o.isNum(r.cot_pctile)).sort((a, b) => b.cot_pctile - a.cot_pctile).map(r => [r.name, r.cot_pctile - 50]), { labelW: 150, fmt: v => ord(v + 50) });
   };
   drawBars(); o.onResize(drawBars);
 }
@@ -110,7 +111,7 @@ async function commodity(key) {
       <li class="kpi__item"><span class="kpi__name">One year</span><span class="kpi__level">${o.mv(c.y1)}</span></li>
       <li class="kpi__item"><span class="kpi__name">Day's move</span><span class="kpi__level">${o.isNum(c.z) ? o.sgn(c.z) + 'σ' : '–'}</span><span class="kpi__chg">against a year of moves</span></li>
       <li class="kpi__item"><span class="kpi__name">52-week range</span><span class="kpi__level">${o.isNum(c.pos52) ? c.pos52 + '%' : '–'}</span><span class="kpi__chg">${px(c.lo52, c.dec)} to ${px(c.hi52, c.dec)}</span></li>
-      <li class="kpi__item"><span class="kpi__name">Volatility, 20 days</span><span class="kpi__level">${o.isNum(c.rv20) ? o.num(c.rv20, 0) + '%' : '–'}</span><span class="kpi__chg">${o.isNum(c.rv_pctile) ? c.rv_pctile + 'th percentile, 3 years' : ''}</span></li>
+      <li class="kpi__item"><span class="kpi__name">Volatility, 20 days</span><span class="kpi__level">${o.isNum(c.rv20) ? o.num(c.rv20, 0) + '%' : '–'}</span><span class="kpi__chg">${o.isNum(c.rv_pctile) ? ord(c.rv_pctile) + ' percentile, 3 years' : ''}</span></li>
     </ul><p class="side-src">${c.unit}. Front-month future ${c.ticker}, Yahoo Finance.</p></aside>`;
 
   // price
@@ -132,7 +133,7 @@ async function commodity(key) {
     o.barChart(o.$('#vch'), { cats: labs, series: [{ type: 'out', v: vol }], h: 150, catFmt: (l, i) => (i % Math.ceil(labs.length / 8) === 0 ? l : ''), fmtY: v => k(v), rest: 0, read: () => {} });
     if (c.cal) {
       const cl = c.cal;
-      o.$('#calbox').innerHTML = `<h3 style="margin-top:26px">Calendar spread: ${cl.a} less ${cl.b}</h3><p class="lede" style="font-size:14px">The same two contracts over their shared history. Above zero, the nearer contract is dearer (backwardation). Today at the ${cl.pctile ?? '–'}th percentile of the past year.</p><div class="chart-box" id="calch"></div><p class="readout" id="calr"></p>`;
+      o.$('#calbox').innerHTML = `<h3 style="margin-top:26px">Calendar spread: ${cl.a} less ${cl.b}</h3><p class="lede" style="font-size:14px">The same two contracts over their shared history. Above zero, the nearer contract is dearer (backwardation). Today at the ${O().isNum(cl.pctile) ? ord(cl.pctile) : '–'} percentile of the past year.</p><div class="chart-box" id="calch"></div><p class="readout" id="calr"></p>`;
       o.lineChart(o.$('#calch'), { x: cl.d, series: [{ v: cl.v, area: cl.v[cl.v.length - 1] >= 0 ? 'var(--up-tint)' : 'var(--down-tint)' }], h: 170, read: i => o.$('#calr').innerHTML = `${o.fmtD(cl.d[i])}: ${o.sgn(cl.v[i], c.dec)}` });
     }
   };
@@ -140,7 +141,7 @@ async function commodity(key) {
   // positioning
   const drawCot = () => {
     const cb = c.cot; if (!cb) { o.$('#s-cot').innerHTML = `<h2>Positioning</h2>${o.fail('The CFTC does not publish a Commitments of Traders report for this market.')}`; return; }
-    o.$('#pstrip').innerHTML = kv('Funds, net', k(cb.mm_net), `${ks(cb.mm_chg)} on the week`) + kv('Share of open interest', o.isNum(cb.mm_pct_oi) ? o.sgn(cb.mm_pct_oi, 1) + '%' : '–') + kv('Three-year percentile', o.isNum(cb.pctile3y) ? Math.round(cb.pctile3y) + 'th' : '–', cb.flag || (o.isNum(cb.z3y) ? `z-score ${o.sgn(cb.z3y)}` : '')) + kv('Producers, net', k(cb.prod_net), 'hedgers');
+    o.$('#pstrip').innerHTML = kv('Funds, net', k(cb.mm_net), `${ks(cb.mm_chg)} on the week`) + kv('Share of open interest', o.isNum(cb.mm_pct_oi) ? o.sgn(cb.mm_pct_oi, 1) + '%' : '–') + kv('Three-year percentile', o.isNum(cb.pctile3y) ? ord(cb.pctile3y) : '–', cb.flag || (o.isNum(cb.z3y) ? `z-score ${o.sgn(cb.z3y)}` : '')) + kv('Producers, net', k(cb.prod_net), 'hedgers');
     const h = cb.hist; const a = Math.max(0, h.d.length - 156); const x = h.d.slice(a);
     const mm = h.mm.slice(a), pr = h.prod.slice(a), oi = h.oi.slice(a);
     o.lineChart(o.$('#cotch'), { x, series: [{ v: pr, dash: true }, { v: mm, width: 1.8 }], h: 220, fmtY: v => k(v), read: i => o.$('#cotr').innerHTML = `Week of ${o.fmtD(x[i])}: funds ${k(mm[i])}, producers ${k(pr[i])}` });
@@ -299,8 +300,8 @@ async function secPos(m, head) {
   const drawT = () => o.sortableTable(o.$('#pt'), g === 'All' ? d.rows : d.rows.filter(r => r.group === g), null, render);
   o.chips(o.$('#pg'), groups, g, v => { g = v; drawT(); }); drawT();
   const ex = d.rows.filter(r => r.flag);
-  o.$('#ext').innerHTML = ex.length ? `<ul class="kpi">${ex.map(r => `<li class="kpi__item"><a href="${o.link('commodities/' + r.key + '/')}"><span class="kpi__name">${r.name}</span><span class="kpi__level" style="display:block">${Math.round(r.pctile3y)}th</span><span class="kpi__chg">${r.flag}</span></a></li>`).join('')}</ul>` : '<p class="muted" style="font-size:14px;margin-top:12px">No market is at a three-year extreme this week.</p>';
-  const drawC = () => o.hbars(o.$('#pc'), [...d.rows].filter(r => o.isNum(r.pctile3y)).sort((a, b) => b.pctile3y - a.pctile3y).map(r => [r.name, r.pctile3y - 50]), { labelW: 150, fmt: v => Math.round(v + 50) + 'th' });
+  o.$('#ext').innerHTML = ex.length ? `<ul class="kpi">${ex.map(r => `<li class="kpi__item"><a href="${o.link('commodities/' + r.key + '/')}"><span class="kpi__name">${r.name}</span><span class="kpi__level" style="display:block">${ord(r.pctile3y)}</span><span class="kpi__chg">${r.flag}</span></a></li>`).join('')}</ul>` : '<p class="muted" style="font-size:14px;margin-top:12px">No market is at a three-year extreme this week.</p>';
+  const drawC = () => o.hbars(o.$('#pc'), [...d.rows].filter(r => o.isNum(r.pctile3y)).sort((a, b) => b.pctile3y - a.pctile3y).map(r => [r.name, r.pctile3y - 50]), { labelW: 150, fmt: v => ord(v + 50) });
   drawC(); o.onResize(drawC);
 }
 
@@ -344,7 +345,7 @@ async function secWeather(m, head) {
   const an = v => o.isNum(v) ? `<span class="${v >= 0 ? 'mv--down' : 'mv--up'}" style="color:${v >= 0 ? 'var(--down-text)' : '#4aa3ff'}">${o.sgn(v, 1)}°C</span>` : '–';
   const pp = v => o.isNum(v) ? `${Math.round(v)}%` : '–';
   const rowsFor = role => d.locs.filter(l => l.role === role).map(l => `<tr data-k="${l.key}"><td class="l">${l.name}<small>${o.esc(l.markets)}</small></td><td>${an(l.w1_2?.t_anom)}</td><td>${an(l.w3_5?.t_anom)}</td>${role === 'gas' ? `<td>${o.num(l.w1_2?.hdd, 0)}<small>normal ${o.num(l.w1_2?.hdd_n, 0)}</small></td><td>${o.num(l.w1_2?.cdd, 0)}<small>normal ${o.num(l.w1_2?.cdd_n, 0)}</small></td>` : `<td>${o.num(l.w1_2?.p, 0)} mm<small>${pp(l.w1_2?.p_pct)} of normal</small></td><td>${o.num(l.w3_5?.p, 0)} mm<small>${pp(l.w3_5?.p_pct)} of normal</small></td>`}</tr>`).join('');
-  m.innerHTML = head(`Open-Meteo: 16-day forecast, then the ECMWF ensemble mean to day 35; normals from ten years of ERA5 reanalysis. Updated ${d.updated}.`) + `<div class="col-main rv">
+  m.innerHTML = head(`Open-Meteo: 16-day forecast, then the NOAA GEFS ensemble mean to day 34; normals from ten years of ERA5 reanalysis. Updated ${d.updated}.`) + `<div class="col-main rv">
     <section class="sec"><h2>Gas and power demand</h2><p class="lede" style="font-size:14px">Heating degree days (HDD): how far the daily mean falls below 18°C, summed. More HDD than normal means more gas burnt for heat; cooling degree days (CDD) do the same for air conditioning in summer.</p>
       <div class="kstrip">${kv('US HDD, next 14 days', o.num(s.us_hdd, 0), `normal ${o.num(s.us_hdd_n, 0)}`) + kv('US HDD, weeks 3 to 5', o.num(s.us_hdd35, 0), `normal ${o.num(s.us_hdd35_n, 0)}`) + kv('Europe HDD, next 14 days', o.num(s.eu_hdd, 0), `normal ${o.num(s.eu_hdd_n, 0)}`) + kv('US CDD, next 14 days', o.num(s.us_cdd, 0), `normal ${o.num(s.us_cdd_n, 0)}`)}</div>
       <div class="tbl-wrap"><table class="tbl wx"><thead><tr><th class="l">City</th><th>Weeks 1–2</th><th>Weeks 3–5</th><th>HDD, 14 days</th><th>CDD, 14 days</th></tr></thead><tbody>${rowsFor('gas')}</tbody></table></div><p class="src">US total: New York, Chicago, Atlanta and Dallas. Europe: London and Berlin. Temperature columns: mean against the ten-year normal for the same dates.</p></section>
