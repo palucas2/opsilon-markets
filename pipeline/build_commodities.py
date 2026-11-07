@@ -44,7 +44,7 @@ def _get(url, timeout=30, retries=3, as_json=True, sleep=3):
         try:
             req = urllib.request.Request(url, headers=UA)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                raw = resp.read().decode("utf-8", "replace")
+                raw = resp.read().decode("utf-8-sig", "replace")
             return json.loads(raw) if as_json else raw
         except Exception as e:  # noqa: BLE001
             last = e
@@ -509,7 +509,13 @@ def portwatch(days=400):
     if not rows:
         return None
     df = pd.DataFrame(rows)
-    df["date"] = pd.to_datetime(df["date"], unit="ms", errors="coerce") if np.issubdtype(df["date"].dtype, np.number) else pd.to_datetime(df["date"], errors="coerce")
+    if pd.api.types.is_numeric_dtype(df["date"]):
+        df["date"] = pd.to_datetime(df["date"], unit="ms", errors="coerce")
+    else:
+        df["date"] = pd.to_datetime(df["date"].astype(str), errors="coerce")
+    for c in ("n_total", "n_tanker", "n_dry_bulk", "n_container", "capacity_tanker", "capacity"):
+        if c in df:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
     return df.dropna(subset=["date"])
 
 
@@ -562,7 +568,7 @@ def chokepoint_block(df):
 # 6. Weather (Open-Meteo)
 # ---------------------------------------------------------------------------
 def _om(url, params):
-    return _get(url + "?" + urllib.parse.urlencode(params), timeout=90, sleep=5)
+    return _get(url + "?" + urllib.parse.urlencode(params), timeout=90, retries=2, sleep=10)
 
 
 def weather():
@@ -607,28 +613,53 @@ def weather():
 
 
 def _normals(locs):
-    """Daily normals (10 years, ±3-day smoothing) by day of year; cached for a week."""
+    """Daily normals for the next weeks: ten past years of ERA5 for the same calendar window,
+    all locations in one request per year (light on the free API), ±3-day smoothing.
+    Cached for a week in data/cache."""
     cache = CACHE / "commodities_normals.json"
     try:
         c = json.loads(cache.read_text())
-        if c.get("built") and (date.today() - date.fromisoformat(c["built"])).days < 7 and all(l[0] in c["n"] for l in locs):
+        if (date.today() - date.fromisoformat(c["built"])).days < 7 and all(l[0] in c["n"] for l in locs):
             return c["n"]
     except Exception:  # noqa: BLE001
         pass
-    end = date.today() - timedelta(days=7)
-    start = date(end.year - 10, end.month, 1)
-    res = {}
-    for l in locs:
-        j = _om("https://archive-api.open-meteo.com/v1/archive", {"latitude": l[2], "longitude": l[3], "start_date": start.isoformat(),
-                                                                 "end_date": end.isoformat(), "daily": "temperature_2m_mean,precipitation_sum", "timezone": "UTC"})
-        if not j or "daily" not in j:
+    lat = ",".join(str(l[2]) for l in locs)
+    lon = ",".join(str(l[3]) for l in locs)
+    w0, w1 = date.today() - timedelta(days=4), date.today() + timedelta(days=50)
+    acc = {l[0]: {} for l in locs}           # key -> doy -> [(t, p)]
+    for back in range(1, 11):
+        try:
+            a, b = w0.replace(year=w0.year - back), w1.replace(year=w1.year - back)
+        except ValueError:                    # 29 February
+            a, b = (w0 - timedelta(days=1)).replace(year=w0.year - back), (w1 - timedelta(days=1)).replace(year=w1.year - back)
+        j = _om("https://archive-api.open-meteo.com/v1/archive", {"latitude": lat, "longitude": lon, "start_date": a.isoformat(), "end_date": b.isoformat(),
+                                                                 "daily": "temperature_2m_mean,precipitation_sum", "timezone": "UTC"})
+        if not j:
             continue
-        df = pd.DataFrame({"t": j["daily"]["temperature_2m_mean"], "p": j["daily"]["precipitation_sum"]}, index=pd.to_datetime(j["daily"]["time"]))
-        doy = df.groupby(df.index.dayofyear).mean()
-        doy = doy.reindex(range(1, 367)).interpolate()
-        sm = pd.concat([doy.iloc[-3:], doy, doy.iloc[:3]]).rolling(7, center=True).mean().iloc[3:-3]
-        res[l[0]] = {"t": [r(x, 2) for x in sm["t"].values], "p": [r(x, 2) for x in sm["p"].values]}
-        time.sleep(1)
+        j = j if isinstance(j, list) else [j]
+        for i, l in enumerate(locs):
+            if i >= len(j) or not isinstance(j[i], dict) or "daily" not in j[i]:
+                continue
+            dd = j[i]["daily"]
+            for d_, t_, p_ in zip(dd["time"], dd["temperature_2m_mean"], dd["precipitation_sum"]):
+                acc[l[0]].setdefault(pd.Timestamp(d_).dayofyear, []).append((t_, p_))
+        time.sleep(8)
+    res = {}
+    for k_, m_ in acc.items():
+        if not m_:
+            continue
+        t_arr, p_arr = [None] * 366, [None] * 366
+        for doy, vals in m_.items():
+            ts = [v[0] for v in vals if v[0] is not None]; ps = [v[1] for v in vals if v[1] is not None]
+            t_arr[doy - 1] = float(np.mean(ts)) if ts else None
+            p_arr[doy - 1] = float(np.mean(ps)) if ps else None
+        def sm(arr):
+            out = []
+            for i in range(366):
+                win = [arr[(i + o) % 366] for o in range(-3, 4) if arr[(i + o) % 366] is not None]
+                out.append(r(float(np.mean(win)), 2) if arr[i] is not None and win else None)
+            return out
+        res[k_] = {"t": sm(t_arr), "p": sm(p_arr)}
     if res:
         cache.parent.mkdir(parents=True, exist_ok=True)
         cache.write_text(json.dumps({"built": date.today().isoformat(), "n": res}))
