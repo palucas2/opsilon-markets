@@ -24,29 +24,39 @@ function heroParticles(c) {
     o.strokeStyle = '#fff'; o.lineCap = 'round'; o.lineWidth = S * .09;
     const p = new Path2D('M17 6.5a6.5 6.5 0 1 0 0 11M5.5 12H14'); o.save(); o.scale(S / 24, S / 24); o.lineWidth = 2.1; o.stroke(p); o.restore();
     const img = o.getImageData(0, 0, S, S).data; P = [];
-    const step = Math.max(2, Math.round(S / 240));
-    for (let y = 0; y < S; y += step) for (let x = 0; x < S; x += step) if (img[(y * S + x) * 4 + 3] > 128 && Math.random() < .85) {
+    const step = Math.max(2, Math.round(S / 420));
+    const per = 2;
+    for (let y = 0; y < S; y += step) for (let x = 0; x < S; x += step) if (img[(y * S + x) * 4 + 3] > 128) for (let k = 0; k < per; k++) {
       const tx = (W - S) / 2 + x + (Math.random() - .5) * step, ty = (H - S) / 2 + y + (Math.random() - .5) * step + 24;
-      P.push({ tx, ty, x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, a: Math.random() * .7 + .3, s: Math.random() * 1.1 + .35, ph: Math.random() * 6.28 });
+      P.push({ tx, ty, x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, b: 3 + Math.floor(Math.random() * 5), s: Math.random() * 1.2 + .5, ph: Math.random() * 6.28 });
     }
-    for (let i = 0; i < P.length * .18; i++) { const a = Math.random() * 6.28, r = Math.min(W, H) * (.32 + Math.random() * .25); P.push({ tx: W / 2 + Math.cos(a) * r * 1.2, ty: H / 2 + Math.sin(a) * r * .8, x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, a: Math.random() * .25, s: Math.random() * .8 + .2, ph: Math.random() * 6.28, dust: 1 }); }
+    for (let i = 0; i < P.length * .08; i++) { const a = Math.random() * 6.28, r = Math.min(W, H) * (.32 + Math.random() * .25); P.push({ tx: W / 2 + Math.cos(a) * r * 1.2, ty: H / 2 + Math.sin(a) * r * .8, x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, b: Math.floor(Math.random() * 2), s: Math.random() * .8 + .2, ph: Math.random() * 6.28, dust: 1 }); }
   }
   build(); addEventListener('resize', O().debounce(build, 200));
   c.addEventListener('mousemove', e => { const r = c.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; });
   c.addEventListener('mouseleave', () => { mouse.x = mouse.y = -1e4; });
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const NB = 8;
   function f(t) {
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
     const rgb = getComputedStyle(document.documentElement).getPropertyValue('--star').trim();
-    for (const p of P) {
+    const mx = mouse.x, my = mouse.y, s1 = t * .0006, s2 = t * .0005;
+    const buckets = Array.from({ length: NB }, () => []);
+    for (let i = 0; i < P.length; i++) {
+      const p = P[i];
       const wob = p.dust ? 14 : 2.2;
-      const tx = p.tx + Math.sin(t * .0006 + p.ph) * wob, ty = p.ty + Math.cos(t * .0005 + p.ph * 1.3) * wob;
+      const tx = p.tx + Math.sin(s1 + p.ph) * wob, ty = p.ty + Math.cos(s2 + p.ph * 1.3) * wob;
       p.vx += (tx - p.x) * .012; p.vy += (ty - p.y) * .012;
-      const dx = p.x - mouse.x, dy = p.y - mouse.y, d2 = dx * dx + dy * dy;
-      if (d2 < 9000) { const k = (9000 - d2) / 9000 * 2.4; p.vx += dx / Math.sqrt(d2 + 1) * k; p.vy += dy / Math.sqrt(d2 + 1) * k; }
+      const dx = p.x - mx, dy = p.y - my, d2 = dx * dx + dy * dy;
+      if (d2 < 9000) { const d = Math.sqrt(d2 + 1), k = (9000 - d2) / 9000 * 2.4; p.vx += dx / d * k; p.vy += dy / d * k; }
       p.vx *= .86; p.vy *= .86; p.x += p.vx; p.y += p.vy;
-      g.fillStyle = `rgba(${rgb},${p.a * (.75 + .25 * Math.sin(t * .002 + p.ph))})`;
-      g.fillRect(p.x, p.y, p.s, p.s);
+      buckets[p.b].push(p);
+    }
+    for (let b = 0; b < NB; b++) {
+      const a = (b + 1) / NB * (.8 + .2 * Math.sin(t * .0015 + b * 1.7));
+      g.fillStyle = `rgba(${rgb},${a.toFixed(3)})`;
+      const L = buckets[b];
+      for (let i = 0; i < L.length; i++) { const p = L[i]; g.fillRect(p.x, p.y, p.s, p.s); }
     }
     if (!reduce) requestAnimationFrame(f);
   }
