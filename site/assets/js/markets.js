@@ -466,13 +466,13 @@ async function company(slug) {
   const k = (n, l, s) => `<li class="kpi__item"><span class="kpi__name">${n}</span><span class="kpi__level">${l}</span><span class="kpi__chg">${s || ''}</span></li>`;
   const cagr = c.dcf?.cagr;
   m.className = 'wrap grid12';
-  m.innerHTML = `<header class="page-head rv" style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;max-width:none">
+  m.innerHTML = `<header class="page-head rv co-head" style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;max-width:none">
     <div><div class="crumbs"><a href="${o.link('companies/')}">Companies</a> / ${c.sector}</div><h1>${o.esc(c.name)}</h1>
     <div style="display:flex;align-items:baseline;gap:14px;margin-top:14px;flex-wrap:wrap"><span class="tnum" style="font-size:30.72px;font-weight:540;letter-spacing:-.03em">${cs}${o.num(c.price)}</span><span style="font-size:16px;color:var(--ink-2)">${o.mv(chg, 2, '')} (${o.mv(chgp)}) on the day</span></div>
     <div class="page-meta">Close ${o.fmtD(c.date)}. ${c.t}${c.exchange ? ', ' + c.exchange : ''}. Yahoo Finance.</div>
     <p class="page-lede">${c.sector}${c.industry ? ', ' + c.industry : ''}.${o.isNum(y.rev?.[L]) ? ` Revenue of ${fs}${o.num(y.rev[L], 1)}bn in the year to ${lastY}${o.isNum(c.revg) ? `, ${c.revg >= 0 ? 'up' : 'down'} ${o.num(Math.abs(c.revg), 1)}%` : ''}${o.isNum(c.opm) ? `, with an operating margin of ${o.num(c.opm, 1)}%` : ''}.` : ''}</p>
     <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap"><button class="btn" id="watch">Add to watchlist</button><a class="btn btn--ghost" href="${o.link('calendar/')}">Results calendar</a></div></div>
-    <div style="font-size:clamp(48px,7vw,96px);font-weight:640;letter-spacing:-.05em;line-height:1;text-align:right">${c.t.split('.')[0].slice(0, 6)}</div></header>
+    <div class="co-tick" style="font-size:clamp(48px,7vw,96px);font-weight:640;letter-spacing:-.05em;line-height:1;text-align:right">${c.t.split('.')[0].slice(0, 6)}</div></header>
   <aside class="col-side rv" style="grid-row:2/span 2"><h2 class="side-title">Key figures</h2><ul class="kpi">
     ${k('Market value', o.big(c.mcap_usd), `Rank ${c.rank} of 600, in dollars`)}
     ${k('P/E, last 12 months', o.isNum(c.pe) && c.pe > 0 ? o.num(c.pe, 1) + 'x' : '–', o.isNum(c.eps) ? `EPS ${cs}${o.num(c.eps)}` : '')}

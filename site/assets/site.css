@@ -274,6 +274,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
   .home-links>div:first-child{padding-right:30vw}.home-links>div:last-child{padding-left:30vw}
 }
 @media (max-width:640px){
+  .co-tick{display:none}.co-head{grid-template-columns:1fr!important}
   .cards{grid-template-columns:1fr}
   .two,.three{grid-template-columns:1fr}
   .heat{grid-template-columns:repeat(3,1fr)}

@@ -107,23 +107,127 @@ def ticker_bundle(symbol: str) -> dict:
 # ---------------------------------------------------------------------------
 # FRED (public CSV endpoint, no key)
 # ---------------------------------------------------------------------------
+_fred_fail = {"n": 0}
+
+
 def fred(series_id: str, start: str = "1900-01-01") -> pd.Series:
+    """FRED series. Uses the official API when FRED_API_KEY is set (reliable from
+    GitHub runners); otherwise the public CSV endpoint, with a circuit breaker so
+    an unreachable FRED costs seconds, not hours. Falls back to Yahoo/BLS for
+    the series that have an equivalent."""
     if MOCK:
         return _mock_fred(series_id, start)
-    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}&cosd={start}"
-    for attempt in range(3):
+    s = _fred_api(series_id, start) if os.environ.get("FRED_API_KEY") else None
+    if s is None or s.empty:
+        s = _fred_csv(series_id, start)
+    if s.empty:
+        s = _fallback(series_id, start)
+    return s
+
+
+def _fred_api(series_id, start):
+    url = (f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}"
+           f"&api_key={os.environ['FRED_API_KEY']}&file_type=json&observation_start={start}")
+    for attempt in range(2):
         try:
-            req = urllib.request.Request(url, headers=UA)
-            with urllib.request.urlopen(req, timeout=40) as r:
-                df = pd.read_csv(io.StringIO(r.read().decode()))
-            df.columns = ["date", "v"]
-            df["date"] = pd.to_datetime(df["date"])
-            df["v"] = pd.to_numeric(df["v"], errors="coerce")
-            return df.dropna().set_index("date")["v"]
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30) as r:
+                js = json.loads(r.read().decode())
+            obs = [(o["date"], o["value"]) for o in js.get("observations", []) if o["value"] not in (".", "")]
+            if not obs:
+                return pd.Series(dtype=float)
+            idx = pd.to_datetime([d for d, _ in obs])
+            return pd.Series([float(v) for _, v in obs], index=idx)
         except Exception as e:  # noqa: BLE001
-            log.warning("FRED %s (try %d): %s", series_id, attempt + 1, e)
-            time.sleep(2 * (attempt + 1))
+            log.warning("FRED API %s (try %d): %s", series_id, attempt + 1, e)
+            time.sleep(1.5)
+    return None
+
+
+def _fred_csv(series_id, start):
+    if _fred_fail["n"] >= 3:
+        return pd.Series(dtype=float)
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}&cosd={start}"
+    try:
+        req = urllib.request.Request(url, headers=UA)
+        with urllib.request.urlopen(req, timeout=20) as r:
+            df = pd.read_csv(io.StringIO(r.read().decode()))
+        df.columns = ["date", "v"]
+        df["date"] = pd.to_datetime(df["date"])
+        df["v"] = pd.to_numeric(df["v"], errors="coerce")
+        _fred_fail["n"] = 0
+        return df.dropna().set_index("date")["v"]
+    except Exception as e:  # noqa: BLE001
+        _fred_fail["n"] += 1
+        log.warning("FRED CSV %s: %s%s", series_id, e, " (FRED unreachable: skipping the CSV endpoint for this run)" if _fred_fail["n"] >= 3 else "")
+        return pd.Series(dtype=float)
+
+
+# Equivalents when FRED is unreachable
+_YAHOO_EQ = {"GS10": "^TNX", "DGS10": "^TNX", "DGS5": "^FVX", "TB3MS": "^IRX", "DGS3MO": "^IRX", "DGS30": "^TYX"}
+_BLS_EQ = {"CPIAUCSL": "CUSR0000SA0", "CPILFESL": "CUSR0000SA0L1E", "PAYEMS": "CES0000000001", "UNRATE": "LNS14000000"}
+
+
+def _fallback(series_id, start):
+    try:
+        if series_id in _YAHOO_EQ:
+            s = series_close(_YAHOO_EQ[series_id], "max")
+            s = s[s.index >= pd.Timestamp(start)]
+            return s.resample("MS").mean() if series_id in ("GS10", "TB3MS") else s
+        if series_id == "T10Y3M":
+            a, b = series_close("^TNX", "max"), series_close("^IRX", "max")
+            s = (a - b).dropna()
+            return s[s.index >= pd.Timestamp(start)]
+        if series_id in _BLS_EQ:
+            return bls(_BLS_EQ[series_id], start)
+        if series_id == "SAHMREALTIME":
+            u = bls("LNS14000000", "1968-01-01")
+            if u.empty:
+                return u
+            m3 = u.rolling(3).mean()
+            sahm = (m3 - m3.shift(1).rolling(12).min()).dropna()
+            return sahm[sahm.index >= pd.Timestamp(start)].round(2)
+    except Exception as e:  # noqa: BLE001
+        log.warning("fallback %s: %s", series_id, e)
     return pd.Series(dtype=float)
+
+
+def series_close(ticker, period="max"):
+    df = prices([ticker], period)
+    return df[ticker].dropna() if ticker in df else pd.Series(dtype=float)
+
+
+_bls_cache: dict = {}
+
+
+def bls(series_id, start="1990-01-01"):
+    """BLS public API v1 (no key): monthly series, 10 years per request."""
+    y0 = max(int(start[:4]), 1948)
+    for (sid, yy), s in _bls_cache.items():
+        if sid == series_id and yy <= y0:
+            return s[s.index >= pd.Timestamp(start)]
+    y1 = date.today().year
+    out = {}
+    key = os.environ.get("BLS_API_KEY")
+    step = 20 if key else 10
+    for a in range(y0, y1 + 1, step):
+        b = min(y1, a + step - 1)
+        body = {"seriesid": [series_id], "startyear": str(a), "endyear": str(b)}
+        if key:
+            body["registrationkey"] = key
+        url = f"https://api.bls.gov/publicAPI/v{'2' if key else '1'}/timeseries/data/"
+        try:
+            req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={**UA, "Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                js = json.loads(r.read().decode())
+            for row in js["Results"]["series"][0]["data"]:
+                if row["period"].startswith("M") and row["period"] != "M13":
+                    out[pd.Timestamp(f"{row['year']}-{row['period'][1:]}-01")] = float(row["value"])
+        except Exception as e:  # noqa: BLE001
+            log.warning("BLS %s %s-%s: %s", series_id, a, b, e)
+            break
+    s = pd.Series(out).sort_index() if out else pd.Series(dtype=float)
+    _bls_cache[(series_id, y0)] = s
+    return s[s.index >= pd.Timestamp(start)] if len(s) else s
 
 
 def fred_release_dates(release_id: int, start: date, end: date) -> list[str]:

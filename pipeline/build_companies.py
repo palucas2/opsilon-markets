@@ -142,7 +142,13 @@ def refresh_fundamentals(universe):
         batch = max(batch, len(status) - have)
     todo = status[:batch]
     log.info("fundamentals: refreshing %d of %d", len(todo), len(status))
-    for _, slug, sym in todo:
+    budget = time.time() + 60 * float(os.environ.get("FUND_MAX_MIN", "45"))
+    for k, (_, slug, sym) in enumerate(todo):
+        if time.time() > budget:
+            log.warning("fundamentals: time budget reached after %d companies, the rest next run", k)
+            break
+        if k % 25 == 0:
+            log.info("fundamentals: %d/%d", k, len(todo))
         try:
             p = process_bundle(ticker_bundle(sym))
             old = read_json(f"{FUND_DIR}/{slug}.json", base=CACHE) or {}

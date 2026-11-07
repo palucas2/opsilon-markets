@@ -31,8 +31,29 @@ STEPS = [
 ]
 
 
+def probe():
+    """Log which sources answer from this machine (5 s each)."""
+    import urllib.request
+    from sources import MOCK
+    if MOCK:
+        return
+    for name, url in [("Yahoo", "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=5d&interval=1d"),
+                      ("FRED csv", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10&cosd=2026-01-01"),
+                      ("FRED api", "https://api.stlouisfed.org/fred/series?series_id=DGS10"),
+                      ("BLS", "https://api.bls.gov/publicAPI/v1/timeseries/data/LNS14000000"),
+                      ("World Bank", "https://api.worldbank.org/v2/country/US/indicator/NY.GDP.MKTP.KD.ZG?format=json&mrnev=1")]:
+        t0 = time.time()
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (opsilon-markets)"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                log.info("probe %-10s HTTP %s in %.1fs", name, r.status, time.time() - t0)
+        except Exception as e:  # noqa: BLE001
+            log.info("probe %-10s FAILED in %.1fs: %s", name, time.time() - t0, str(e)[:80])
+
+
 def main(only=None):
     ensure_dirs()
+    probe()
     status = {}
     for name, fn in STEPS:
         if only and name not in only:
