@@ -104,10 +104,10 @@ def process_bundle(b: dict) -> dict:
             earnings["past"].append([dstr(t), r(row.get("EPS Estimate"), 2), r(row.get("Reported EPS"), 2), tm])
     rate = info.get("dividendRate")
     px_now = info.get("currentPrice") or info.get("regularMarketPrice") or info.get("previousClose")
-    if info.get("trailingAnnualDividendYield") is not None:
-        dy = info["trailingAnnualDividendYield"] * 100       # fraction, same currency basis
-    elif info.get("dividendYield") is not None:
-        dy = info["dividendYield"]                          # recent yfinance: already in percent
+    if info.get("dividendYield") is not None:
+        dy = info["dividendYield"]                          # yfinance >= 0.2.54: already in percent
+    elif info.get("trailingAnnualDividendYield") is not None:
+        dy = info["trailingAnnualDividendYield"] * 100       # fraction (wrong for pence-quoted shares)
     elif rate and px_now and (info.get("currency") == info.get("financialCurrency", info.get("currency"))):
         dy = rate / px_now * 100
     else:
