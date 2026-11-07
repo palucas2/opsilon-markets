@@ -194,8 +194,8 @@ def _fallback(series_id, start):
             url = "https://www.chicagofed.org/-/media/publications/nfci/nfci-data-series-csv.csv"
             with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r:
                 df = pd.read_csv(io.StringIO(r.read().decode()))
-            dcol = [c for c in df.columns if "date" in c.lower()][0]
-            vcol = [c for c in df.columns if c.strip().upper() == "NFCI"][0]
+            dcol = df.columns[0]
+            vcol = next((c for c in df.columns if c.strip().upper() == "NFCI"), df.columns[1])
             out = pd.Series(pd.to_numeric(df[vcol], errors="coerce").values, index=pd.to_datetime(df[dcol])).dropna()
             return out[out.index >= pd.Timestamp(start)]
         if series_id == "SAHMREALTIME":

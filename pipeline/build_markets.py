@@ -162,6 +162,10 @@ def build_recession():
             periods.append([dstr(start), dstr(d - pd.DateOffset(months=1))]); start = None
     if start is not None:
         periods.append([dstr(start), dstr(rec.index[-1])])
+    if not periods:   # NBER business-cycle dates, used when FRED is unreachable
+        periods = [["1960-05-01", "1961-02-01"], ["1970-01-01", "1970-11-01"], ["1973-12-01", "1975-03-01"], ["1980-02-01", "1980-07-01"],
+                   ["1981-08-01", "1982-11-01"], ["1990-08-01", "1991-03-01"], ["2001-04-01", "2001-11-01"], ["2008-01-01", "2009-06-01"],
+                   ["2020-03-01", "2020-04-01"]]
     out["rec"] = periods
 
     def latest(key, rule, unit, dec=2):
