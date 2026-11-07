@@ -20,17 +20,17 @@ function heroParticles(c) {
   const g = c.getContext('2d'); let P = [], W = 0, H = 0, dpr = 1, mouse = { x: -1e4, y: -1e4 };
   function build() {
     dpr = Math.min(2, devicePixelRatio || 1); W = c.clientWidth; H = c.clientHeight; c.width = W * dpr; c.height = H * dpr;
-    const off = document.createElement('canvas'); const S = Math.min(W * .8, H * .9); off.width = S; off.height = S; const o = off.getContext('2d');
+    const off = document.createElement('canvas'); const S = Math.round(Math.min(W * .5, H * .56)); off.width = S; off.height = S; const o = off.getContext('2d');
     o.strokeStyle = '#fff'; o.lineCap = 'round'; o.lineWidth = S * .09;
     const p = new Path2D('M17 6.5a6.5 6.5 0 1 0 0 11M5.5 12H14'); o.save(); o.scale(S / 24, S / 24); o.lineWidth = 2.1; o.stroke(p); o.restore();
     const img = o.getImageData(0, 0, S, S).data; P = [];
-    const step = Math.max(2, Math.round(S / 420));
+    const step = Math.max(2, Math.round(S / 300));
     const per = 2;
     for (let y = 0; y < S; y += step) for (let x = 0; x < S; x += step) if (img[(y * S + x) * 4 + 3] > 128) for (let k = 0; k < per; k++) {
-      const tx = (W - S) / 2 + x + (Math.random() - .5) * step, ty = (H - S) / 2 + y + (Math.random() - .5) * step + 24;
+      const tx = (W - S) / 2 + S * .03 + x + (Math.random() - .5) * step, ty = (H - S) / 2 + y + (Math.random() - .5) * step + 10;
       P.push({ tx, ty, x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, b: 3 + Math.floor(Math.random() * 5), s: Math.random() * 1.2 + .5, ph: Math.random() * 6.28 });
     }
-    for (let i = 0; i < P.length * .08; i++) { const a = Math.random() * 6.28, r = Math.min(W, H) * (.32 + Math.random() * .25); P.push({ tx: W / 2 + Math.cos(a) * r * 1.2, ty: H / 2 + Math.sin(a) * r * .8, x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, b: Math.floor(Math.random() * 2), s: Math.random() * .8 + .2, ph: Math.random() * 6.28, dust: 1 }); }
+    for (let i = 0; i < P.length * .05; i++) { const a = Math.random() * 6.28, r = S * (.55 + Math.random() * .35); P.push({ tx: W / 2 + Math.cos(a) * r * 1.2, ty: H / 2 + Math.sin(a) * r * .8, x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, b: Math.floor(Math.random() * 2), s: Math.random() * .8 + .2, ph: Math.random() * 6.28, dust: 1 }); }
   }
   build(); addEventListener('resize', O().debounce(build, 200));
   c.addEventListener('mousemove', e => { const r = c.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; });
@@ -53,7 +53,7 @@ function heroParticles(c) {
       buckets[p.b].push(p);
     }
     for (let b = 0; b < NB; b++) {
-      const a = (b + 1) / NB * (.8 + .2 * Math.sin(t * .0015 + b * 1.7));
+      const a = (b + 1) / NB * .42 * (.8 + .2 * Math.sin(t * .0015 + b * 1.7));
       g.fillStyle = `rgba(${rgb},${a.toFixed(3)})`;
       const L = buckets[b];
       for (let i = 0; i < L.length; i++) { const p = L[i]; g.fillRect(p.x, p.y, p.s, p.s); }

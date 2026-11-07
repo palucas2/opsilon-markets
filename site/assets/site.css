@@ -243,9 +243,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
 .home-hero h1{position:absolute;top:calc(var(--nav-h) + 4px);left:0;right:0;text-align:center;font-size:17px;font-weight:550;letter-spacing:-.01em}
 .home-links{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;align-items:center;pointer-events:none}
 .home-links>div{display:flex;flex-direction:column;gap:22px;pointer-events:auto}
-.home-links>div:first-child{align-items:flex-end;padding-right:min(30vw,440px)}
-.home-links>div:last-child{align-items:flex-start;padding-left:min(30vw,440px)}
-.home-links a{font-size:15px;font-weight:600;position:relative}
+.home-links>div:first-child{align-items:flex-end;padding-right:min(20vw,22vh)}
+.home-links>div:last-child{align-items:flex-start;padding-left:min(20vw,22vh)}
+.home-links a{font-size:16px;font-weight:600;position:relative;padding:4px 0}
 .home-links a::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:1px;background:currentColor;transform:scaleX(0);transition:transform .3s var(--ease-out)}
 .home-links a:hover::after{transform:scaleX(1)}
 .home-top{position:absolute;top:0;left:0;right:0;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 var(--gutter);z-index:3;font-size:13px;color:var(--ink-2)}
