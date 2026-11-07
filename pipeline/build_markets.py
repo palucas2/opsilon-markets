@@ -143,14 +143,15 @@ def build_recession():
     def pack(s, every=1, dec=2):
         s = series_clean(s).iloc[::every]
         return {"dates": [dstr(x) for x in s.index], "values": [r(v, dec) for v in s.tolist()]}
+    wk = lambda s: s.resample("W-FRI").last().dropna() if len(s) else s
     curve = fred(C.RECESSION["curve"], "1982-01-01")
-    out["curve"] = pack(curve.resample("W-FRI").last().dropna())
+    out["curve"] = pack(wk(curve))
     out["sahm"] = pack(fred(C.RECESSION["sahm"], "1970-01-01"))
     claims = fred(C.RECESSION["claims"], "1970-01-01")
     out["claims"] = pack(claims / 1000, dec=0)
     out["claims4"] = pack((claims / 1000).rolling(4).mean().dropna(), dec=1)
     hy = fred(C.RECESSION["hy"], "1997-01-01")
-    out["hy"] = pack(hy.resample("W-FRI").last().dropna())
+    out["hy"] = pack(wk(hy))
     out["nfci"] = pack(fred(C.RECESSION["nfci"], "1971-01-01"))
     rec = fred(C.RECESSION["rec"], "1960-01-01")
     periods, start = [], None

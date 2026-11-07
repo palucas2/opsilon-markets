@@ -64,13 +64,29 @@ def build():
     d = _base("credit-spreads", human_date(cdf.index[-1]) if not cdf.empty else "") | {
         "kind": "lines", "unit": "%", "dec": 2, "dates": [dstr(x) for x in cdf.index], "ranges": ["1M", "3M", "6M", "1Y", "2Y"],
         "series": [{"name": n, "values": [r(v, 3) for v in cdf[n].tolist()] if n in cdf else [], "on": i < 2} for i, (n, _) in enumerate(C.CREDIT_SPREADS)]}
-    write_json("dashboards/credit-spreads.json", d)
-    hy = cdf["High yield"] if "High yield" in cdf else pd.Series(dtype=float)
-    ig = cdf["Investment grade"] if "Investment grade" in cdf else pd.Series(dtype=float)
-    tiles.append({"id": "credit-spreads", "title": "Credit spreads", "cat": "Rates", "src": f"ICE BofA, FRED, {d['asof']}",
-                  "spark": [r(v, 3) for v in hy.iloc[-130:].tolist()], "spark2": [r(v, 3) for v in ig.iloc[-130:].tolist()],
-                  "head": {"label": "High yield", "value": r(hy.iloc[-1], 2) if len(hy) else None, "unit": "%",
-                           "chg": r((hy.iloc[-1] - hy.iloc[-22]) * 100, 0) if len(hy) > 22 else None, "chg_unit": "bp in a month"}})
+    if cdf.empty or not cdf.notna().any().any():
+        # FRED unreachable (no FRED_API_KEY): show credit ETFs instead of spreads
+        etfs = [("High yield (HYG)", "HYG"), ("High yield (JNK)", "JNK"), ("Investment grade (LQD)", "LQD"), ("EM bonds (EMB)", "EMB"), ("Treasuries 7-10y (IEF)", "IEF")]
+        edf = prices([t for _, t in etfs], "2y").ffill()
+        d = _base("credit-spreads", human_date(edf.index[-1]) if not edf.empty else "") | {
+            "kind": "lines", "rebase": True, "dates": [dstr(x) for x in edf.index], "ranges": ["1M", "3M", "6M", "1Y", "2Y"],
+            "series": [{"name": n, "values": [r(v, 3) for v in edf[t].tolist()] if t in edf else [], "on": i < 3} for i, (n, t) in enumerate(etfs)],
+            "source": "Yahoo Finance, credit ETFs (ICE BofA spreads appear once a FRED API key is set)",
+            "lede": "Credit ETFs rebased to the same start: high yield, investment grade and emerging-market bonds against Treasuries."}
+        write_json("dashboards/credit-spreads.json", d)
+        hy = series_clean(edf["HYG"]) if "HYG" in edf else pd.Series(dtype=float)
+        ief = series_clean(edf["IEF"]) if "IEF" in edf else pd.Series(dtype=float)
+        tiles.append({"id": "credit-spreads", "title": "Credit spreads", "cat": "Rates", "src": f"Yahoo Finance, credit ETFs, {d['asof']}",
+                      "spark": [r(v, 3) for v in hy.iloc[-130:].tolist()], "spark2": [r(v, 3) for v in ief.iloc[-130:].tolist()],
+                      "head": {"label": "HYG", "etf": True, "value": r(hy.iloc[-1], 2) if len(hy) else None, "m1": change_over(hy, 30)[0] if len(hy) else None}})
+    else:
+        write_json("dashboards/credit-spreads.json", d)
+        hy = cdf["High yield"] if "High yield" in cdf else pd.Series(dtype=float)
+        ig = cdf["Investment grade"] if "Investment grade" in cdf else pd.Series(dtype=float)
+        tiles.append({"id": "credit-spreads", "title": "Credit spreads", "cat": "Rates", "src": f"ICE BofA, FRED, {d['asof']}",
+                      "spark": [r(v, 3) for v in hy.iloc[-130:].tolist()], "spark2": [r(v, 3) for v in ig.iloc[-130:].tolist()],
+                      "head": {"label": "High yield", "value": r(hy.iloc[-1], 2) if len(hy) else None, "unit": "%",
+                               "chg": r((hy.iloc[-1] - hy.iloc[-22]) * 100, 0) if len(hy) > 22 else None, "chg_unit": "bp in a month"}})
 
     # ---------------------------------------------------------- vol curve
     vt = [t for _, t, _ in C.VOL_CURVE]

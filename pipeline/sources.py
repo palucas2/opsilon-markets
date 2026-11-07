@@ -75,6 +75,10 @@ def _yf_download(tickers, period, start):
     df = pd.concat(out, axis=1)
     df.index = pd.to_datetime(df.index).tz_localize(None).normalize()
     df = df.loc[:, ~df.columns.duplicated()].sort_index()
+    df = df[~df.index.duplicated(keep="last")]
+    crypto = [c for c in df.columns if str(c).endswith("-USD")]
+    if len(crypto) < len(df.columns):          # weekend rows only matter for crypto
+        df = df[df.index.dayofweek < 5]
     return df
 
 
@@ -110,6 +114,10 @@ def ticker_bundle(symbol: str) -> dict:
 _fred_fail = {"n": 0}
 
 
+def _empty():
+    return pd.Series(dtype=float, index=pd.DatetimeIndex([]))
+
+
 def fred(series_id: str, start: str = "1900-01-01") -> pd.Series:
     """FRED series. Uses the official API when FRED_API_KEY is set (reliable from
     GitHub runners); otherwise the public CSV endpoint, with a circuit breaker so
@@ -122,7 +130,10 @@ def fred(series_id: str, start: str = "1900-01-01") -> pd.Series:
         s = _fred_csv(series_id, start)
     if s.empty:
         s = _fallback(series_id, start)
-    return s
+    if s is None or s.empty:
+        return _empty()
+    s.index = pd.DatetimeIndex(s.index)
+    return s.sort_index()
 
 
 def _fred_api(series_id, start):
@@ -179,6 +190,14 @@ def _fallback(series_id, start):
             return s[s.index >= pd.Timestamp(start)]
         if series_id in _BLS_EQ:
             return bls(_BLS_EQ[series_id], start)
+        if series_id == "NFCI":
+            url = "https://www.chicagofed.org/-/media/publications/nfci/nfci-data-series-csv.csv"
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r:
+                df = pd.read_csv(io.StringIO(r.read().decode()))
+            dcol = [c for c in df.columns if "date" in c.lower()][0]
+            vcol = [c for c in df.columns if c.strip().upper() == "NFCI"][0]
+            out = pd.Series(pd.to_numeric(df[vcol], errors="coerce").values, index=pd.to_datetime(df[dcol])).dropna()
+            return out[out.index >= pd.Timestamp(start)]
         if series_id == "SAHMREALTIME":
             u = bls("LNS14000000", "1968-01-01")
             if u.empty:
@@ -221,7 +240,10 @@ def bls(series_id, start="1990-01-01"):
                 js = json.loads(r.read().decode())
             for row in js["Results"]["series"][0]["data"]:
                 if row["period"].startswith("M") and row["period"] != "M13":
-                    out[pd.Timestamp(f"{row['year']}-{row['period'][1:]}-01")] = float(row["value"])
+                    try:
+                        out[pd.Timestamp(f"{row['year']}-{row['period'][1:]}-01")] = float(row["value"])
+                    except (TypeError, ValueError):
+                        pass   # BLS uses "-" for missing months
         except Exception as e:  # noqa: BLE001
             log.warning("BLS %s %s-%s: %s", series_id, a, b, e)
             break

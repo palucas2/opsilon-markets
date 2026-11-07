@@ -99,7 +99,8 @@ function tileBody(el, t) {
     H.innerHTML = t.head.label ? `${t.head.label} ${o.mv(t.head.value)}` : ''; S.textContent = 'Largest move of nine futures over one month.';
     const box = o.h('<div></div>'); B.appendChild(box); requestAnimationFrame(() => o.hbars(box, t.rows.sort((a, b) => (b[1] ?? -1e9) - (a[1] ?? -1e9)).slice(0, 7), { labelW: 110, h: 24 }));
   } else if (t.id === 'credit-spreads') {
-    H.innerHTML = `High yield ${o.num(t.head.value)}%`; S.innerHTML = `${o.isNum(t.head.chg) ? `<span class="${t.head.chg > 0 ? 'mv--down' : 'mv--up'}">${o.sgn(t.head.chg, 0)}bp</span> in a month. ` : ''}Dashed: investment grade.`;
+    if (t.head.etf) { H.innerHTML = `High yield ${o.mv(t.head.m1)}`; S.textContent = 'HYG over a month. Dashed: 7–10 year Treasuries (IEF).'; }
+    else { H.innerHTML = `High yield ${o.num(t.head.value)}%`; S.innerHTML = `${o.isNum(t.head.chg) ? `<span class="${t.head.chg > 0 ? 'mv--down' : 'mv--up'}">${o.sgn(t.head.chg, 0)}bp</span> in a month. ` : ''}Dashed: investment grade.`; }
     const box = o.h('<div></div>'); B.appendChild(box); requestAnimationFrame(() => o.spark(box, t.spark, { h: 150, v2: t.spark2 }));
   } else if (t.id === 'volatility-term-structure') {
     H.innerHTML = `VIX ${o.num(t.head.value)}`; S.innerHTML = `${o.isNum(t.head.chg) ? `${o.mv(t.head.chg, 2, '')} points since ${t.compare_date}. ` : ''}${t.head.inverted ? 'The 9-day sits above the 1-month: the front of the curve is inverted.' : 'The curve slopes upward, the normal shape.'}`;
