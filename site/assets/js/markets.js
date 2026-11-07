@@ -20,13 +20,13 @@ function heroParticles(c) {
   const g = c.getContext('2d'); let P = [], W = 0, H = 0, dpr = 1, mouse = { x: -1e4, y: -1e4 };
   function build() {
     dpr = Math.min(2, devicePixelRatio || 1); W = c.clientWidth; H = c.clientHeight; c.width = W * dpr; c.height = H * dpr;
-    const off = document.createElement('canvas'); const S = Math.min(W, H) * .62; off.width = S; off.height = S; const o = off.getContext('2d');
+    const off = document.createElement('canvas'); const S = Math.min(W * .8, H * .9); off.width = S; off.height = S; const o = off.getContext('2d');
     o.strokeStyle = '#fff'; o.lineCap = 'round'; o.lineWidth = S * .09;
     const p = new Path2D('M17 6.5a6.5 6.5 0 1 0 0 11M5.5 12H14'); o.save(); o.scale(S / 24, S / 24); o.lineWidth = 2.1; o.stroke(p); o.restore();
     const img = o.getImageData(0, 0, S, S).data; P = [];
-    const step = Math.max(2, Math.round(S / 210));
+    const step = Math.max(2, Math.round(S / 240));
     for (let y = 0; y < S; y += step) for (let x = 0; x < S; x += step) if (img[(y * S + x) * 4 + 3] > 128 && Math.random() < .85) {
-      const tx = (W - S) / 2 + x + (Math.random() - .5) * step, ty = (H - S) / 2 + y + (Math.random() - .5) * step + 10;
+      const tx = (W - S) / 2 + x + (Math.random() - .5) * step, ty = (H - S) / 2 + y + (Math.random() - .5) * step + 24;
       P.push({ tx, ty, x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, a: Math.random() * .7 + .3, s: Math.random() * 1.1 + .35, ph: Math.random() * 6.28 });
     }
     for (let i = 0; i < P.length * .18; i++) { const a = Math.random() * 6.28, r = Math.min(W, H) * (.32 + Math.random() * .25); P.push({ tx: W / 2 + Math.cos(a) * r * 1.2, ty: H / 2 + Math.sin(a) * r * .8, x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, a: Math.random() * .25, s: Math.random() * .8 + .2, ph: Math.random() * 6.28, dust: 1 }); }
