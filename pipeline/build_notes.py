@@ -123,7 +123,13 @@ def build():
             continue
         best = max(mv, key=lambda m: m["chg"]); worst = min(mv, key=lambda m: m["chg"])
         u = mv[0]["unit"]
-        txt = f"{best['name']} {'rose' if best['chg'] > 0 else 'fell'} the most, {_fmt(best['chg'])}{u}, and {worst['name']} {'rose' if worst['chg'] > 0 else 'fell'} the least, {_fmt(worst['chg'])}{u}."
+        b_, w_ = f"{_fmt(best['chg'])}{u}", f"{_fmt(worst['chg'])}{u}"
+        if best["chg"] >= 0 and worst["chg"] < 0:
+            txt = f"{best['name']} rose the most, {b_}, and {worst['name']} fell the most, {w_}."
+        elif worst["chg"] >= 0:
+            txt = f"Everything rose: {best['name']} the most, {b_}, and {worst['name']} the least, {w_}."
+        else:
+            txt = f"Everything fell: {worst['name']} the most, {w_}, and {best['name']} the least, {b_}."
         sections.append({"key": k, "title": lab, "text": txt, "moves": sorted(mv, key=lambda m: -m["chg"])})
 
     # 1-month correlation snapshot
