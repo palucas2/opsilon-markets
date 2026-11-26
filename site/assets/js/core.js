@@ -61,6 +61,13 @@ const NAV = [
     ['central-banks/', 'Central banks', 'Fed, ECB, BoE and BoJ'],
     ['recession-watch/', 'Recession watch', 'The indicators that lead downturns'],
     ['market-history/', 'Market history', 'Every S&P 500 episode since 1928']] },
+  { k: 'trading', label: 'Trading Part', desc: 'The commodity desk: edge tests, intraday setups, Topstep', items: [
+    ['trading/', 'Overview', 'Which strategies show an edge, and the no-trade windows'],
+    ['trading/edge/', 'Edge tests', 'Strategies from the literature, tested out of sample'],
+    ['trading/intraday/', 'Intraday & Topstep', 'Setups backtested and run through the combine rules'],
+    ['trading/fundamentals/', 'Fundamentals', 'EIA, cracks, COT, crops and weather'],
+    ['trading/sizing/', 'Sizing', 'Contracts for $150–250 of risk'],
+    ['trading/journal/', 'Journal', 'Setup, reason, result, lesson']] },
 ];
 const MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 6.5a6.5 6.5 0 1 0 0 11"/><path d="M5.5 12H14"/></svg>';
 const CHEV = '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 3.5 5 7l3.5-3.5"/></svg>';

@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("opsilon")
 
 import build_commodities, build_companies, build_dashboards, build_history, build_markets, build_notes  # noqa: E402
+from trading import build as build_trading  # noqa: E402
 
 STEPS = [
     ("dashboards", build_dashboards.build),
@@ -26,6 +27,7 @@ STEPS = [
     ("central-banks", build_markets.build_central_banks),
     ("recession", build_markets.build_recession),
     ("commodities", build_commodities.build),
+    ("trading", build_trading.build),         # Trading Part: edge tests, intraday, Topstep
     ("companies", build_companies.build),     # also writes calendar.json
     ("history", build_history.build),
     ("notes", build_notes.build),             # needs fx.json and calendar.json

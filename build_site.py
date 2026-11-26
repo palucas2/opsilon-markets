@@ -39,7 +39,7 @@ LAYOUT = """<!DOCTYPE html>
 </html>
 """
 
-SECTION_BUNDLE = {"markets": "markets", "tools": "tools", "research": "research", "home": "markets", "info": "research"}
+SECTION_BUNDLE = {"markets": "markets", "tools": "tools", "research": "research", "home": "markets", "info": "research", "trading": "trading"}
 
 
 def page(path: str, title: str, page_key: str, section: str, desc: str = "", param: str = "", main_cls: str = "wrap grid12", bundle: str = ""):
@@ -124,6 +124,11 @@ def main():
     page("market-history", "Market history", "history", "research")
     for e in (load("history/index.json", {}) or {}).get("episodes", []):
         page(f"market-history/{e['slug']}", e["title"], "episode", "research", param=e["slug"])
+    # ---------------- Trading Part
+    page("trading", "Trading Part", "tradinghome", "trading", "Commodity strategies tested for an edge, intraday setups and the Topstep combine.")
+    for sub, t, key in [("edge", "Edge tests", "tradingedge"), ("intraday", "Intraday & Topstep", "tradingintraday"), ("fundamentals", "Fundamentals", "tradingfund"),
+                        ("sizing", "Position sizing", "tradingsizing"), ("journal", "Trade journal", "tradingjournal"), ("stack", "Data & stack", "tradingstack")]:
+        page(f"trading/{sub}", t, key, "trading", t)
     page("sources", "Data sources", "sources", "info")
     page("methodology", "Methodology", "methodology", "info")
     (DIST / "404.html").write_text("""<!DOCTYPE html><html><head><meta charset="utf-8"><title>Not found: Opsilon Markets</title>

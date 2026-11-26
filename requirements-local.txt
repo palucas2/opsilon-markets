@@ -1,0 +1,9 @@
+# Tools that run on your Mac (not needed by GitHub Actions)
+streamlit>=1.36
+plotly>=5.20
+mcp>=1.2
+pypdf>=4.0
+requests>=2.31
+databento>=0.40
+# Bloomberg (terminal machine only):
+#   pip install blpapi --index-url=https://blpapi.bloomberg.com/repository/releases/python/simple/

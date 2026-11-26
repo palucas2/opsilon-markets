@@ -10,7 +10,7 @@ async function home() {
     <div class="home-top"><a class="brand" href="${link('')}"><span class="brand__mark">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 6.5a6.5 6.5 0 1 0 0 11"/><path d="M5.5 12H14"/></svg>'}</span>Opsilon Markets</a>
       <nav><span>For information only. Not investment advice.</span><a href="${link('sources/')}">Data sources</a><button id="themeBtn2" style="font-size:13px;color:inherit">Theme</button></nav></div>
     <h1>Markets, on the record.</h1>
-    <div class="home-links"><div><a href="${link('dashboards/')}">Markets</a><a href="${link('lab/')}">Tools</a></div><div><a href="${link('reports/')}">Research</a><a href="${link('companies/')}">Companies</a></div></div>
+    <div class="home-links"><div><a href="${link('dashboards/')}">Markets</a><a href="${link('lab/')}">Tools</a></div><div><a href="${link('reports/')}">Research</a><a href="${link('companies/')}">Companies</a><a href="${link('trading/')}">Trading Part</a></div></div>
   </section></main>`;
   $('#themeBtn2').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; try { localStorage.setItem('ops-theme', t); } catch (e) {} };
   heroParticles($('#hero'));
