@@ -298,3 +298,4 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
   .home-links{grid-template-columns:1fr;align-content:end;padding-bottom:60px}
   .home-links>div:first-child,.home-links>div:last-child{align-items:center;padding:0;flex-direction:row;justify-content:center}
 }
+.tbl .badge{white-space:nowrap}
